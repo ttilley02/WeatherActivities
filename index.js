@@ -195,7 +195,7 @@ let activityStorage= {
     ]
     ,
   windRain: []
-  
+
   }
 
 
@@ -221,7 +221,8 @@ function canIDoIt(tempNum,windNum,timeOfDay,precipNum){
     }
     
   }  
-  console.log(activityStorage.ableActivities);
+  populateActivities(activityStorage.ableActivities);
+  populateActivityDetails(activityStorage.ableActivities);
 }
 
 //Updates Dom with confirmation of being able to do something
@@ -318,79 +319,103 @@ fetch(newUrl2)
     )
   .catch(err => {
     displayError(err.message);
+  });
+  fetch(newUrl2)
+  .then(response => 
+    {
+      if (response.ok) 
+        {
+          return response.json();
+        }
+      throw new Error(response.statusText);
+    })
+  .then(responseJson => 
+    populateForecast(responseJson)
+  )
+  .catch(err => {
+    displayError(err.message);
   });        
 }
 
+function populateForecast(forecastResponse){
+ 
+  $('#section3').html(`<img src=${forecastResponse.properties.periods[0].icon}>
+  <br>
+  <br>
+  <p class='details-f'> ${forecastResponse.properties.periods[0].name}
+  <br><br>temperature: ${forecastResponse.properties.periods[0].temperature}F°
+  <br><br>Wind Speed: ${forecastResponse.properties.periods[0].windSpeed}
+  <br><br>wind Direction: ${forecastResponse.properties.periods[0].windDirection}
+  <br><br>${forecastResponse.properties.periods[0].detailedForecast}
+ </p>`)
   
-   
-/*
-
-// Provides forecast upon the click of the forecast event listener
-function displayForecast(forecastResponse){
-
- let forecastHtml = `<h1>Forecast</h1>
- <img src=${forecastResponse.properties.periods[0].icon}>
- <br>
- <br>
- <p class='details-f'> ${forecastResponse.properties.periods[0].name}
- <br><br>temperature: ${forecastResponse.properties.periods[0].temperature}F°
- <br><br>Wind Speed: ${forecastResponse.properties.periods[0].windSpeed}
- <br><br>wind Direction: ${forecastResponse.properties.periods[0].windDirection}
- <br><br>${forecastResponse.properties.periods[0].detailedForecast}
-</p>
- 
-<br>
- <input type="button" class="activites" value="Suggested Activites">
- <br>
- <input class="home" type="button" value="Start Over">`
- 
- $('.forecast').on('click', e => {
-     $('.container').html(forecastHtml)
- })
 }
 
 
-//Loops the Array of doable activities determed in canIdo function and prints to the DOM
 
-function suggestedActivities(doableStuff){
-  let qualifiedActivities = 
+
+function populateActivities(array){
+  for(let i = 0; i < array.length; i++){
+  $('#list').append(
   `
-  <h1>The Weather seems right for...</h1>
-  <section class= "activitiesList">
-
-  <ul style="list-style: none;" class="js-suggested details">
-  </section>
+  <li id='item' class='item'>${array[i].activity}</li>
   `
+  )
+ 
+  } 
+}
 
- $('.container').on('click', '.activites', e => {
-     
-     $('.container').html(qualifiedActivities)
-     
-      
-     for(let i = 0; i < doableStuff.length; i++){
-      let activityCorrected = doableStuff[i].activity.replace("_", " ")
-      $(".js-suggested").append(
-      `<div class="${doableStuff[i].activity} activity">
-      
-      <img src=${doableStuff[i].imageico} class="activity-photo">
-      
-      <p>${activityCorrected}</p>
-      </div>
-      
+function populateActivityDetails(array){
+  for(let i = 0; i < array.length; i++){
+
+  $('#list2').append(
+  `
+  <li id=${array[i].activity} class=${array[i].activity}> ${array[i].activity}
+  </li>
+  
+  `
+    )
+    
+  } 
+}
+//MediaWiki API 
+
+function wikipediaSearch(searchterm){
+var url = "https://en.wikipedia.org/w/api.php"; 
+  
+var params = {
+  action: "query",
+  list: "search",
+  srsearch: searchterm,
+  format: "json"
+  };
+  
+  url = url + "?origin=*";
+  Object.keys(params).forEach(function(key){url += "&" + key + "=" + params[key];});
+  
+  fetch(url)
+   .then(function(response){return response.json();})
+   .then(function(response) {
+    $('#list2').append(
       `
-     )
-      
-    }   
-    $(".container").append(
-      `
-      <br>
-      <input class="home" type="button" value="Start Over">
+      ${response.query.search[0].snippet}.....
       `
       )
-      activityPages(doableStuff)
- })
+   })
+  .catch(function(error){console.log(error);});
+   
 }
-// Creates specific activity information up clicking the activity element
+
+function populatewikipedia(wikipediaResp){
+  $("#list2").append(wikipediaResp.query.search[0].snippet)
+  
+
+  
+}
+   
+ 
+
+/*
 
 function activityPages(doableStuff){
   for(let i = 0; i < doableStuff.length; i++){
@@ -430,81 +455,7 @@ function activityPages(doableStuff){
 
 //Edits the DOM and recreates the activities listing
 
-function backButton(doableStuff){
-$('.container').on('click',".back", e=> {
-    
-    let qualifiedActivities = 
-    `
-    <h1>Look at what you can do</h1>
-    <section class= "activitiesList">
 
-    <ul style="list-style: none;" class="js-suggested">
-    </section>
-    `
-$('.container').html(qualifiedActivities)
-     for(let i = 0; i < doableStuff.length; i++){
-      let activityCorrected = doableStuff[i].activity.replace("_", " ")
-      $(".js-suggested").append(
-       `
-       <div class="${doableStuff[i].activity} activity">
-       <img src=${doableStuff[i].imageico} class="activity-photo">
-       <p>${activityCorrected}</p>
-       </div>
-      `
-      )}
-      $(".container").append(
-        `
-        <br>
-        <input class="home" type="button" value="Start Over">
-        `
-        )     
-    activityPages(doableStuff);  
-  })
-  
-
-}
-
-//Edits DOM and recreates the home screen HTML
-
-function homeButton(){
-  $('.container').on('click',".home", e=> {
-  $(".container").html(
-    `
-    <h1>Weather for Activities</h1>
-
-    <form id="js-form" class="search-form css-search">
-           
- 
-    <input type="text" name="location" class="location-query" placeholder="Enter a zip, address or city">
-    <button type="submit">Submit</button>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <input class="click" type="button" value="Use current Location">
-    <br>
-    <input class="forecast" type="button" value=" Check your forecast">
-    </form>
-    <main>
-        <section class="flex-container">
-           <section class="js-results results hidden">
-           
-            </section>
-        </section>
-    </main>
-    `
-  )
-  
-  $(allfunctions);
-  
-        
-      
-  })
-}
 
 //MediaWiki API 
 
